@@ -1,15 +1,19 @@
 [package]
-name = "libnfqueue"
-description = "Bindings for the libnetfilter_queue library"
-version = "0.1.0"
+name = "netfilter_queue"
+version = "0.2.1"
 authors = [
     "Laurie Clark-Michalek <lclarkmichalek@gmail.com>",
     "Zach Pomerantz <zach@terminal.com>"
 ]
 license = "MIT"
-repository = "https://github.com/bluepeppers/libnetfilter_queue"
+description = "Bindings for the libnetfilter_queue library"
+repository = "https://github.com/terminalcloud/libnetfilter_queue"
+readme = "README.md"
+keywords = ["iptables", "nf", "nfq", "netfilter", "netfilter_queue"]
+exclude = [".gitignore"]
 
 [dependencies]
 lazy_static = "0.1.*"
 libc = "0.1"
 num = "0.1.*"
+errno = "0.1.*"

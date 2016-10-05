@@ -5,16 +5,17 @@
 #![deny(missing_docs)]
 
 extern crate libc;
+extern crate errno;
 extern crate num;
 #[macro_use]
 extern crate lazy_static;
 
 mod ffi;
 
-mod error;
 mod util;
 mod lock;
 
+pub mod error;
 pub mod handle;
 pub mod queue;
 pub mod message;

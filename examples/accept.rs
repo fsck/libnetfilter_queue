@@ -1,4 +1,4 @@
-extern crate libnfqueue as nfq;
+extern crate netfilter_queue as nfq;
 
 use nfq::handle::{Handle, ProtocolFamily};
 use nfq::queue::{CopyMode, Verdict};

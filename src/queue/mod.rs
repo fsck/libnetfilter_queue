@@ -11,11 +11,10 @@ use std::ptr::null;
 use error::*;
 use util::*;
 use message::{Message, Payload};
-pub use self::verdict::Verdict;
+pub use self::verdict::{Verdict, QueueHandle};
 use lock::NFQ_LOCK as LOCK;
 
 use ffi::*;
-pub use ffi::nfq_q_handle as QueueHandle;
 
 const NFQNL_COPY_NONE: uint8_t = 0;
 const NFQNL_COPY_META: uint8_t = 1;
@@ -33,7 +32,7 @@ pub enum CopyMode {
 
 
 
-extern fn queue_callback<F: PacketHandler>(qh: *mut QueueHandle,
+extern fn queue_callback<F: PacketHandler>(qh: *mut nfq_q_handle,
                                            nfmsg: *mut nfgenmsg,
                                            nfad: *mut nfq_data,
                                            cdata: *mut c_void) -> c_int {
@@ -41,14 +40,18 @@ extern fn queue_callback<F: PacketHandler>(qh: *mut QueueHandle,
     let queue: &mut Queue<F> = unsafe { as_mut(&queue_ptr).unwrap() };
     let message = Message::new(nfmsg, nfad);
 
-    queue.callback.handle(qh, message.as_ref()) as c_int
+    queue.callback.handle(QueueHandle::new(qh), message.as_ref()) as c_int
 }
 
-/// A handle to an NFQueue queue
+/// A handle to an NFQueue queue and its data.
 ///
 /// This is used to set queue-specific settings, such as copy-mode and max-length.
+/// It is bundled with callback metadata specific to this instance,
+/// making it fatter than `QueueHandle`.
+///
+/// `QueueHandle` should be used within packet-handling for `Sync` operations.
 pub struct Queue<F: PacketHandler> {
-    ptr: *mut QueueHandle,
+    ptr: *mut nfq_q_handle,
     callback: F
 }
 
@@ -68,9 +71,9 @@ impl<F: PacketHandler> Queue<F> {
                packet_handler: F) -> Result<Box<Queue<F>>, Error> {
         let _lock = LOCK.lock().unwrap();
 
-        let nfq_ptr: *const QueueHandle = null();
+        let nfq_ptr: *const nfq_q_handle = null();
         let mut queue: Box<Queue<F>> = Box::new(Queue {
-            ptr: nfq_ptr as *mut QueueHandle, // set after nfq_create_queue
+            ptr: nfq_ptr as *mut nfq_q_handle, // set after nfq_create_queue
             callback: packet_handler,
         });
         let queue_ptr: *mut Queue<F> = &mut *queue;
@@ -138,7 +141,7 @@ pub trait PacketHandler {
     /// Handle a packet from the queue
     ///
     /// `Verdict`s must be set using the `set_verdict` fn.
-    fn handle(&mut self, hq: *mut QueueHandle, message: Result<&Message, &Error>) -> i32;
+    fn handle(&mut self, hq: QueueHandle, message: Result<&Message, &Error>) -> i32;
 }
 
 /// An abstraction over `PacketHandler` for simple handling that needs only a `Verdict`
@@ -151,7 +154,7 @@ pub trait VerdictHandler {
 
 #[allow(non_snake_case)]
 impl<V> PacketHandler for V where V: VerdictHandler {
-    fn handle(&mut self, hq: *mut QueueHandle, message: Result<&Message, &Error>) -> i32 {
+    fn handle(&mut self, hq: QueueHandle, message: Result<&Message, &Error>) -> i32 {
         let NULL: *const c_uchar = null();
         match message {
             Ok(m) => { let _ = Verdict::set_verdict(hq, m.header.id(), self.decide(m), 0, NULL); },
