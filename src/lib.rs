@@ -20,5 +20,5 @@ pub mod handle;
 pub mod queue;
 pub mod message;
 
-//#[cfg(test)]
-//mod test;
+#[cfg(test)]
+mod test;

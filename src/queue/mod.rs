@@ -57,6 +57,9 @@ pub struct Queue<F: PacketHandler> {
 
 impl<F: PacketHandler> Drop for Queue<F> {
     fn drop(&mut self) {
+        if self.ptr.is_null(){
+            panic!("Nullpointer detected self.ptr: {:?}", self.ptr);
+        }
         let ret = unsafe { nfq_destroy_queue(self.ptr) };
         if ret != 0 {
             panic!("Failed to destroy nfq queue");
@@ -69,6 +72,7 @@ impl<F: PacketHandler> Queue<F> {
     pub fn new(handle: *mut nfq_handle,
                queue_number: uint16_t,
                packet_handler: F) -> Result<Box<Queue<F>>, Error> {
+        println!("Call all the Queue::new");
         let _lock = LOCK.lock().unwrap();
 
         let nfq_ptr: *const nfq_q_handle = null();
@@ -84,8 +88,10 @@ impl<F: PacketHandler> Queue<F> {
                              queue_callback::<F>,
                              mem::transmute(queue_ptr))
         };
+        println!("impl<F: PacketHandler> Queue<F> ptr={:?}",ptr);
 
         if ptr.is_null() {
+            println!("Nullpointer returned when creating queue");
             return Err(error(Reason::CreateQueue, "Failed to create queue", None));
         } else {
             queue.ptr = ptr;

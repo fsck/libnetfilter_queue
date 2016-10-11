@@ -1,21 +1,22 @@
-use super::super::verdict::{Verdict, VerdictHandler};
-use super::super::message::{Message, IPHeader};
-use super::super::handle::{Handle, ProtocolFamily};
+use queue::{VerdictHandler,PacketHandler,Verdict,QueueHandle};
+use message::{Message, IPHeader};
+use handle::{Handle, ProtocolFamily};
+use error::*;
 
 struct Void;
 struct Callback;
 struct Decider;
 
-impl PacketHandler<Void> for Callback {
-    fn callback(&self, hq: *mut QueueHandle, message: Result<&Message, &Error>, _: &mut Void) -> i32 {
-        unsafe { Message.header.ip_header().ok().unwrap(); }
+impl PacketHandler for Callback {
+    fn handle(&mut self, hq: QueueHandle, message: Result<&Message, &Error>) -> i32 {
+        unsafe { message.ok().unwrap().ip_header().ok().unwrap(); }
         -1
     }
 }
 
-impl VerdictHandler<Void> for Decider {
-    fn decide(&self, message: &Message, _: &mut Void) -> Verdict {
-        unsafe { Message.header.ip_header().ok().unwrap(); }
+impl VerdictHandler for Decider {
+    fn decide(&mut self, message: &Message) -> Verdict {
+        unsafe { message.ip_header().ok().unwrap(); }
         panic!();
         Verdict::Accept
     }
@@ -23,12 +24,11 @@ impl VerdictHandler<Void> for Decider {
 
 #[test]
 fn bind() {
-    let void = Void;
+    let decider = Decider;
     let mut handle = Handle::new().ok().unwrap();
-    let _ = handle.queue_builder(void)
-        .copy_mode_sized_to_payload::<IPHeader>()
-        .decider_and_finalize(Decider)
-        .ok().unwrap();
+
+    let mut queue = handle.queue(0,decider).ok().unwrap();
+    queue.set_mode_sized::<IPHeader>().ok().unwrap();
 
     let _ = handle.bind(ProtocolFamily::INET).ok().unwrap();
 }
@@ -36,26 +36,34 @@ fn bind() {
 #[test]
 #[should_panic]
 fn decide() {
-    let void = Void;
+    let decider = Decider;
     let mut handle = Handle::new().ok().unwrap();
-    let _ = handle.queue_builder(void)
-        .copy_mode_sized_to_payload::<IPHeader>()
-        .decider_and_finalize(Decider)
-        .ok().unwrap();
 
-    let _ = handle.bind(ProtocolFamily::INET).ok().unwrap();
-    handle.start_sized_to_payload::<IPHeader>();
+    if let Ok(mut queue) = handle.queue(0,decider){
+        if let Ok(_) = queue.set_mode_sized::<IPHeader>(){
+            let _ = handle.bind(ProtocolFamily::INET).ok().unwrap();
+            handle.start_sized::<IPHeader>();
+        }
+        println!("something broke inside...");
+    }
+    else {
+        println!("something broke outside...")
+    }
 }
 
 #[test]
 fn callback() {
-    let void = Void;
+    let callback = Callback;
     let mut handle = Handle::new().ok().unwrap();
-    let _ = handle.queue_builder(void)
-        .copy_mode_sized_to_payload::<IPHeader>()
-        .callback_and_finalize(Callback)
-        .ok().unwrap();
 
-    let _ = handle.bind(ProtocolFamily::INET6).ok().unwrap();
-    handle.start_sized_to_payload::<IPHeader>();
+    if let Ok(mut queue) = handle.queue(0,callback){
+        if let Ok(_) = queue.set_mode_sized::<IPHeader>(){
+            let _ = handle.bind(ProtocolFamily::INET6).ok().unwrap();
+            handle.start_sized::<IPHeader>();
+        }
+        println!("somebroke broke inside...");
+    }
+    else {
+        println!("something broke outside...")
+    }
 }
