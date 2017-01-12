@@ -36,7 +36,7 @@ fn decider() {
     queue.set_mode(CopyMode::None).ok().unwrap();
 
     handle.bind(ProtocolFamily::INET).ok().unwrap();
-    handle.start(4096);
+    handle.start(4096).unwrap();
 }
 
 #[test]
@@ -48,5 +48,5 @@ fn callback() {
     queue.set_mode(CopyMode::None).ok().unwrap();
 
     handle.bind(ProtocolFamily::INET).ok().unwrap();
-    handle.start(4096);
+    handle.start(4096).unwrap();
 }

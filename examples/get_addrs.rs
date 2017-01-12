@@ -12,7 +12,7 @@ fn main() {
     queue.set_mode_sized::<IPHeader>().ok().unwrap();
 
     println!("Listening for packets...");
-    handle.start_sized::<IPHeader>();
+    handle.start_sized::<IPHeader>().unwrap();
 
     println!("...finished.");
 }
@@ -25,7 +25,7 @@ impl VerdictHandler for Decider {
         // Note that the queue was set and handle was started with `_sized`
         match unsafe { message.ip_header() } {
             Ok(ip_header) => println!("saddr: {}, daddr: {}", ip_header.saddr(), ip_header.daddr()),
-            Err(_) => ()
+            Err(e) => println!("Err: {:?} {:?}",e, message.ptr)
         };
 
         Verdict::Accept

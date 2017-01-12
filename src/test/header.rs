@@ -8,7 +8,7 @@ struct Callback;
 struct Decider;
 
 impl PacketHandler for Callback {
-    fn handle(&mut self, hq: QueueHandle, message: Result<&Message, &Error>) -> i32 {
+    fn handle(&mut self, _: QueueHandle, message: Result<&Message, &Error>) -> i32 {
         unsafe { message.ok().unwrap().ip_header().ok().unwrap(); }
         -1
     }
@@ -42,7 +42,7 @@ fn decide() {
     if let Ok(mut queue) = handle.queue(0,decider){
         if let Ok(_) = queue.set_mode_sized::<IPHeader>(){
             let _ = handle.bind(ProtocolFamily::INET).ok().unwrap();
-            handle.start_sized::<IPHeader>();
+            handle.start_sized::<IPHeader>().unwrap();
         }
         println!("something broke inside...");
     }
@@ -59,7 +59,7 @@ fn callback() {
     if let Ok(mut queue) = handle.queue(0,callback){
         if let Ok(_) = queue.set_mode_sized::<IPHeader>(){
             let _ = handle.bind(ProtocolFamily::INET6).ok().unwrap();
-            handle.start_sized::<IPHeader>();
+            handle.start_sized::<IPHeader>().unwrap();
         }
         println!("somebroke broke inside...");
     }

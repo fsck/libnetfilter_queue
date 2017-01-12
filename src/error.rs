@@ -49,7 +49,7 @@ impl Base for Error {
 }
 
 pub fn error(reason: Reason, msg: &str, res: Option<c_int>) -> Error {
-    let errno = nfq_errno;
+    let errno = unsafe{nfq_errno};
     let desc = match res {
         Some(r) => format!("{} (errno: {}, res: {})", msg, errno, r),
         None => format!("{}, (errno: {})", msg, errno)

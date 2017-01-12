@@ -15,7 +15,7 @@ fn main() {
     queue.set_mode(CopyMode::Metadata).ok().unwrap();
 
     println!("Listening for packets...");
-    handle.start(4096);
+    handle.start(4096).unwrap();
 
     println!("...finished.");
 }

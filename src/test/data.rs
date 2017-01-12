@@ -9,7 +9,7 @@ struct Callback(u32);
 struct Decider(u32);
 
 impl PacketHandler for Callback {
-    fn handle(&mut self, hq: QueueHandle, message: Result<&Message, &Error>) -> i32 {
+    fn handle(&mut self, _: QueueHandle, message: Result<&Message, &Error>) -> i32 {
         match self.0 {
             42 => -1,
             _ => panic!()
@@ -53,7 +53,7 @@ fn decider() {
 
     handle.bind(ProtocolFamily::INET).ok().unwrap();
     println!("decider5");
-    handle.start(4096);
+    handle.start(4096).unwrap();
     println!("decider6");
 }
 
@@ -72,5 +72,5 @@ fn callback() {
     println!("callback4");
     handle.bind(ProtocolFamily::INET).ok().unwrap();
     println!("callback5");
-    handle.start(4096);
+    handle.start(4096).unwrap();
 }
