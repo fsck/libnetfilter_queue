@@ -55,7 +55,7 @@ pub fn error(reason: Reason, msg: &str, res: Option<c_int>) -> Error {
         None => format!("{}, (errno: {})", msg, errno)
     };
     Error {
-        reason: reason,
+        reason,
         description: desc,
         cause: None,
     }

@@ -2,7 +2,7 @@
 //!
 //! Analagous to <http://netfilter.org/projects/libnetfilter_queue/doxygen/group__LibrarySetup.html>
 
-use libc::*;
+use libc;
 use std::mem;
 use error;
 use error::*;
@@ -18,9 +18,9 @@ use ffi::*;
 /// NFQueue will only deal with IP, so only those families are made available.
 pub enum ProtocolFamily {
     /// IPv4 Address Family
-    INET = AF_INET as isize,
+    INET = libc::AF_INET as isize,
     /// IPv6 Address Family
-    INET6 = AF_INET6 as isize
+    INET6 = libc::AF_INET6 as isize
 }
 
 /// A handle into NFQueue
@@ -58,7 +58,7 @@ impl Handle {
     pub fn bind(&mut self, proto: ProtocolFamily) -> Result<(), Error> {
         let _lock = LOCK.lock().unwrap();
 
-        let res = unsafe { nfq_bind_pf(self.ptr, proto as uint16_t) };
+        let res = unsafe { nfq_bind_pf(self.ptr, proto as libc::uint16_t) };
         if res < 0 {
             Err(error(Reason::Bind, "Failed to bind handle", Some(res)))
         } else {
@@ -72,7 +72,7 @@ impl Handle {
     pub fn unbind(&mut self, proto: ProtocolFamily) -> Result<(), Error> {
         let _lock = LOCK.lock().unwrap();
 
-        let res = unsafe { nfq_unbind_pf(self.ptr, proto as uint16_t) };
+        let res = unsafe { nfq_unbind_pf(self.ptr, proto as libc::uint16_t) };
         if res < 0 {
             Err(error(Reason::Unbind, "Failed to unbind handle", Some(res)))
         } else {
@@ -84,7 +84,7 @@ impl Handle {
     pub fn queue<F: PacketHandler>(&mut self,
                                    queue_number: u16,
                                    handler: F) -> Result<Box<Queue<F>>, Error> {
-        Queue::new(self.ptr, queue_number as uint16_t, handler)
+        Queue::new(self.ptr, queue_number as libc::uint16_t, handler)
     }
 
     /// Start listening using any attached queues
@@ -95,19 +95,19 @@ impl Handle {
     pub fn start(&mut self, length: u16) -> Result<(), Error> {
         unsafe {
             // TODO: Get rid of malloc
-            let buffer: *mut c_void = malloc(length as usize);
+            let buffer: *mut libc::c_void = libc::malloc(length as usize);
             if buffer.is_null() {
                 panic!("Failed to allocate packet buffer");
             }
             let fd = nfq_fd(self.ptr);
 
             loop {
-                match recv(fd, buffer, length as usize, 0) {
+                match libc::recv(fd, buffer, length as usize, 0) {
                     rv if rv >=0 => { 
-                        nfq_handle_packet(self.ptr, buffer as *mut c_char, length as i32);
+                        nfq_handle_packet(self.ptr, buffer as *mut libc::c_char, length as i32);
                     },
                     _ => {
-                        free(buffer as *mut c_void);
+                        libc::free(buffer as *mut libc::c_void);
                         let e = errno();
                         // trim() because as_str() is unstable
                         let err = error::error(error::Reason::GetPayload, format!("{}", e).trim(), Some(e.0 as i32));
